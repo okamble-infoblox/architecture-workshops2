@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
 // Client calls the dependency simulator service.
@@ -22,7 +23,14 @@ func NewClient(baseURL string) *Client {
 		BaseURL: baseURL,
 		// LAB: STEP1 TODO - add Timeout and/or a custom Transport with
 		// TLSHandshakeTimeout, ResponseHeaderTimeout, etc.
-		HTTPClient: &http.Client{},
+		HTTPClient: &http.Client{
+			Timeout: 10 * time.Second,
+			Transport: &http.Transport{
+				TLSHandshakeTimeout:   3 * time.Second,
+				ResponseHeaderTimeout: 5 * time.Second,
+				IdleConnTimeout:       10 * time.Second,
+			},
+		},
 	}
 }
 
@@ -33,7 +41,11 @@ func NewClient(baseURL string) *Client {
 func Call(ctx context.Context, c *Client, sleep string, failRate string) (string, error) {
 	url := fmt.Sprintf("%s/work?sleep=%s&fail=%s", c.BaseURL, sleep, failRate)
 	// LAB: STEP1 TODO - replace http.Get with http.NewRequestWithContext(ctx, ...)
-	resp, err := c.HTTPClient.Get(url)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return "", fmt.Errorf("creating request: %w", err)
+	}
+	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("dep call failed: %w", err)
 	}

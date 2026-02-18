@@ -3,10 +3,12 @@ package driver
 import (
 	"context"
 	"fmt"
+	"io"
 	"math"
 	"math/rand"
 	"net/http"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -181,9 +183,16 @@ loop:
 
 func (r *Runner) doRequest(client *http.Client) RequestResult {
 	start := time.Now()
-	req, err := http.NewRequest(r.Config.Method, r.Config.TargetURL, nil)
+	var bodyReader io.Reader
+	if r.Config.Body != "" {
+		bodyReader = strings.NewReader(r.Config.Body)
+	}
+	req, err := http.NewRequest(r.Config.Method, r.Config.TargetURL, bodyReader)
 	if err != nil {
 		return RequestResult{Error: err, Latency: time.Since(start), Timestamp: start}
+	}
+	if r.Config.Body != "" {
+		req.Header.Set("Content-Type", "application/json")
 	}
 	resp, err := client.Do(req)
 	latency := time.Since(start)

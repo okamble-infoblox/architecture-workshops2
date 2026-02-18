@@ -35,7 +35,14 @@ func (tc *TxCase) Handle(w http.ResponseWriter, r *http.Request) {
 	//   2. Only use the TX for the actual DB operation
 	//   3. Keep TX duration as short as possible
 
-	// Begin transaction
+	// LAB: STEP2 FIXED - Make the network call BEFORE starting the transaction
+	// This way we don't hold DB connections or row locks during the slow network call
+	_, depErr := depclient.Call(r.Context(), tc.DepClient, "2s", "0.0")
+	if depErr != nil {
+		log.Printf("tx: dep call error: %v", depErr)
+	}
+
+	// Begin transaction - keep it as short as possible
 	tx, err := tc.DB.Begin()
 	if err != nil {
 		log.Printf("tx: begin error: %v", err)
@@ -44,22 +51,14 @@ func (tc *TxCase) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback()
 
-	// LAB: STEP2 TODO - Lock a row inside the transaction.
-	// This SELECT FOR UPDATE holds a row lock for the entire TX duration.
+	// LAB: STEP2 FIXED - Lock a row inside the transaction, but now only for the minimal time
+	// This SELECT FOR UPDATE holds a row lock only during the actual DB operations
 	var balance int
 	err = tx.QueryRow("SELECT balance FROM accounts WHERE name = $1 FOR UPDATE", "alice").Scan(&balance)
 	if err != nil {
 		log.Printf("tx: query error: %v", err)
 		http.Error(w, "query failed: "+err.Error(), http.StatusInternalServerError)
 		return
-	}
-
-	// LAB: STEP2 TODO - Making a network call INSIDE the transaction.
-	// This is the anti-pattern! The dep call takes ~2s, and during that
-	// time we hold a DB connection AND a row lock.
-	_, depErr := depclient.Call(r.Context(), tc.DepClient, "2s", "0.0")
-	if depErr != nil {
-		log.Printf("tx: dep call error: %v", depErr)
 	}
 
 	// Update the row
