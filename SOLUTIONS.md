@@ -84,6 +84,9 @@ resp, err := c.HTTPClient.Do(req)
 - This prevents zombie requests that continue after the caller has given up
 
 ### Results
+
+![Timeouts Solution Results](docs/images/timeouts-after.png)
+
 - **Score:** 92/100 (up from 68/100)
 - **Error Rate:** 0.0% (down from 61.3%)
 - **p95 Latency:** 3012ms (controlled, all requests complete within timeout)
@@ -178,6 +181,9 @@ tx.Commit()
   - Using sagas or eventual consistency patterns for distributed transactions
 
 ### Results
+
+![Transaction Scope Solution Results](docs/images/tx-after.png)
+
 - **Score:** 100/100 (up from 39/100)
 - **Error Rate:** 0.0% (down from 27.8%)
 - **p95 Latency:** 2015ms (down from 30001ms)
@@ -303,6 +309,9 @@ Slow pool (5 workers):
 - Fast jobs maintain low latency regardless of slow job behavior
 
 ### Results
+
+![Bulkheads Solution Results](docs/images/bulkheads-after.png)
+
 - **Score:** 100/100 (up from 60/100)
 - **Error Rate:** 0.0% (down from 100%)
 - **p95 Latency:** 7ms for fast jobs (excellent)
@@ -404,6 +413,9 @@ spec:
 - **Max Replicas (10):** Cost/resource limit
 
 ### Results
+
+![Autoscale Solution Results](docs/images/autoscale-after.png)
+
 - **Score:** 100/100 (already passing)
 - **Error Rate:** 0.0%
 - **p95 Latency:** 15ms (excellent)
